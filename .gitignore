@@ -1,6 +1,9 @@
 # python
 __pycache__
 
+# nodejs
+node_modules
+
 # editors
 .idea
 .venv

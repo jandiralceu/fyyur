@@ -17,6 +17,7 @@ from forms import *
 #----------------------------------------------------------------------------#
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
@@ -511,7 +512,7 @@ if not app.debug:
 
 # Default port:
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
 
 # Or specify port manually:
 '''

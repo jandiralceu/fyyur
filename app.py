@@ -2,6 +2,7 @@ import dateutil.parser
 import babel
 from flask import Flask, render_template
 from flask_moment import Moment
+from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 
@@ -16,6 +17,8 @@ def create_app():
   app.config.from_object('config')
 
   db.init_app(app=app)
+  
+  migrate = Migrate(app, db)
   
 
   #----------------------------------------------------------------------------#

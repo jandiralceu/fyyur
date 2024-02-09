@@ -1,9 +1,10 @@
 # python
 __pycache__
+.venv
 
 # nodejs
 node_modules
 
 # editors
 .idea
-.venv
+.vscode

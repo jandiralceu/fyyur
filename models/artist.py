@@ -11,3 +11,6 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website_link = db.Column(db.String)
+    seeking_venue = db.Column(db.Boolean, default=False)
+    seeking_description = db.Column(db.Text)

@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  nanodegree:
+    image: bitnami/postgresql:14.8.0
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRESQL_USERNAME=docker
+      - POSTGRESQL_PASSWORD=docker
+      - POSTGRESQL_DATABASE=nanodegree
+    networks:
+      - udacity-network
+
+networks:
+  udacity-network:
+    driver: bridge

@@ -80,10 +80,7 @@ def edit_artist(artist_id: str):
     
     for key in form.data:
         if key in artist.__dict__:
-            if key == 'genres':
-                form[key].default = loads(artist.__dict__[key])
-            else:
-                form[key].default = artist.__dict__[key]
+            form[key].default = artist.__dict__[key] if key != 'genres' else loads(artist.__dict__[key])
     
     form.process()
 
@@ -93,24 +90,21 @@ def edit_artist(artist_id: str):
 @blp.route('/<string:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id: str):
     """This function handles the HTTP GET request to edit an artist."""
-    artist = Artist.query.get_or_404(artist_id)
+    artist: Artist = Artist.query.get_or_404(artist_id)
     
-    # Update the seeking_venue attribute first cause this property is not in the form when it's not checked
+    # Update the seeking_venue attribute first cause this property is not inclided in the form when it's not checked
     artist.seeking_venue = True if "seeking_venue" in request.form else False
     
     for key in request.form:
         if key in artist.__dict__:
-            if key == 'seeking_venue':
-                return
-            
-            if key == 'genres':
-                artist.__dict__[key] = dumps(request.form.getlist('genres'))
-                return
-            
-            artist.__dict__[key] = request.form[key]
+            match key:
+                case 'genres':
+                    artist.genre = dumps(request.form.getlist('genres'))
+                case 'seeking_venue':
+                    continue
+                case _:
+                    setattr(artist, key, request.form[key])
     
-        
-    db.session.add(artist)
     db.session.commit()
     
     return redirect(url_for('artists.show_artist', artist_id=artist_id))

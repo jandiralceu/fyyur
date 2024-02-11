@@ -20,13 +20,12 @@ def search_artists():
     """This function handles the HTTP POST request to search for artists."""
     search_term = request.form.get('search_term', '')
     artists = Artist.query.filter(Artist.name.ilike(f'%{search_term}%')).all()
-    
-    response = {
-      "count": len(artists),
-      "data": artists,
-    }
-    
-    return render_template('pages/search_artists.html', results=response, search_term=search_term)
+
+    return render_template(
+        'pages/search_artists.html', 
+        results={"count": len(artists), "data": artists}, 
+        search_term=search_term
+        )
 
     
 @blp.route('/<int:artist_id>')

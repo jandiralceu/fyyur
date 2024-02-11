@@ -1,5 +1,3 @@
-import dateutil.parser
-import babel
 from flask import Flask, render_template
 from flask_moment import Moment
 from flask_migrate import Migrate
@@ -7,6 +5,7 @@ import logging
 
 
 from db import db
+from helpers import filters
 
 
 def create_app():
@@ -18,20 +17,7 @@ def create_app():
   db.init_app(app=app)
   migrate = Migrate(app=app, db=db)
   
-
-  #----------------------------------------------------------------------------#
-  # Filters.
-  #----------------------------------------------------------------------------#
-
-  def format_datetime(value, format='medium'):
-    date = dateutil.parser.parse(value)
-    if format == 'full':
-        format="EEEE MMMM, d, y 'at' h:mma"
-    elif format == 'medium':
-        format="EE MM, dd, y h:mma"
-    return babel.dates.format_datetime(date, format, locale='en')
-
-  app.jinja_env.filters['datetime'] = format_datetime
+  app.jinja_env.filters['datetime'] = filters.format_datetime
 
 
   @app.route('/')

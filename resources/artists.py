@@ -1,3 +1,4 @@
+from json import dumps, loads
 from flask import flash, redirect, request, render_template, url_for, Blueprint
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -17,23 +18,23 @@ def artists():
 @blp.route('/search', methods=['POST'])
 def search_artists():
     """This function handles the HTTP POST request to search for artists."""
-    response={
-      "count": 1,
-      "data": [{
-        "id": 4,
-        "name": "Guns N Petals",
-        "num_upcoming_shows": 0,
-      }]
+    search_term = request.form.get('search_term', '')
+    artists = Artist.query.filter(Artist.name.ilike(f'%{search_term}%')).all()
+    
+    response = {
+      "count": len(artists),
+      "data": artists,
     }
-    return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
+    
+    return render_template('pages/search_artists.html', results=response, search_term=search_term)
 
-    
-    
     
 @blp.route('/<int:artist_id>')
 def show_artist(artist_id: int):
     """This function handles the HTTP GET request to show an artist."""
-    artist = Artist.query.query.get_or_404(artist_id)
+    artist = Artist.query.get_or_404(artist_id)
+    artist.genres = loads(artist.genres)
+    
     return render_template('pages/show_artist.html', artist=artist)
     
 
@@ -53,11 +54,11 @@ def create_artist_submission():
             city=request.form["city"],
             state=request.form["state"],
             phone=request.form["phone"],
-            genres=request.form["genres"],
+            genres=dumps(request.form.getlist('genres')),
             image_link=request.form["image_link"],
             facebook_link=request.form["facebook_link"],
             website_link=request.form["website_link"],
-            seeking_venue=True if request.form["seeking_venue"] == 'y' else False,
+            seeking_venue=True if "seeking_venue" in request.form else False,
             seeking_description=request.form["seeking_description"],
         )
         
@@ -73,9 +74,22 @@ def create_artist_submission():
 
 @blp.route('/<string:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id: str):
-    """This function handles the HTTP GET request to edit an artist."""
+    """edit_artist returns the update artist form."""
     form = ArtistForm()
-    artist = Artist.query.query.get_or_404(artist_id)
+    artist = Artist.query.get_or_404(artist_id)
+    
+    form.name.default = artist.name
+    form.city.default = artist.city
+    form.state.default = artist.state
+    form.phone.default = artist.phone
+    form.genres.default = loads(artist.genres)
+    form.image_link.default = artist.image_link
+    form.facebook_link.default = artist.facebook_link
+    form.website_link.default = artist.website_link
+    form.seeking_venue.default = artist.seeking_venue
+    form.seeking_description.default = artist.seeking_description
+    
+    form.process()
 
     return render_template('forms/edit_artist.html', form=form, artist=artist)
     
@@ -83,7 +97,39 @@ def edit_artist(artist_id: str):
 @blp.route('/<string:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id: str):
     """This function handles the HTTP GET request to edit an artist."""
-    # TODO: take values from the form submitted, and update existing
-    # artist record with ID <artist_id> using the new attributes
-
-    return redirect(url_for('show_artist', artist_id=artist_id))
+    artist = Artist.query.get_or_404(artist_id)
+    
+    if artist.name != request.form['name'] and request.form['name'] != '':
+        artist.name = request.form['name']
+    
+    if artist.city != request.form['city']:
+        artist.city = request.form['city']
+        
+    if artist.state != request.form['state']:
+        artist.state = request.form['state']
+        
+    if artist.phone != request.form['phone']:
+        artist.phone = request.form['phone']
+    
+    genres = request.form.getlist('genres')
+    if len(genres) > 0:
+        artist.genres = dumps(genres)    
+        
+    if artist.image_link != request.form['image_link']:
+        artist.image_link = request.form['image_link']
+        
+    if artist.facebook_link != request.form['facebook_link']:
+        artist.facebook_link = request.form['facebook_link']
+        
+    if artist.website_link != request.form['website_link']:
+        artist.website_link = request.form['website_link']
+        
+    artist.seeking_venue = True if "seeking_venue" in request.form else False
+        
+    if artist.seeking_description != request.form['seeking_description']:
+        artist.seeking_description = request.form['seeking_description']
+        
+    db.session.add(artist)
+    db.session.commit()
+    
+    return redirect(url_for('artists.show_artist', artist_id=artist_id))

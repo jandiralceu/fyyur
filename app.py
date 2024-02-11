@@ -4,7 +4,6 @@ from flask import Flask, render_template
 from flask_moment import Moment
 from flask_migrate import Migrate
 import logging
-from logging import Formatter, FileHandler
 
 
 from db import db
@@ -17,8 +16,7 @@ def create_app():
   app.config.from_object('config')
 
   db.init_app(app=app)
-  
-  migrate = Migrate(app, db)
+  migrate = Migrate(app=app, db=db)
   
 
   #----------------------------------------------------------------------------#
@@ -61,9 +59,9 @@ def create_app():
 
 
   if not app.debug:
-      file_handler = FileHandler('error.log')
+      file_handler = logging.FileHandler('error.log')
       file_handler.setFormatter(
-          Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
+          logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
       )
       app.logger.setLevel(logging.INFO)
       file_handler.setLevel(logging.INFO)

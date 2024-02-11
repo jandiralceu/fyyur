@@ -78,16 +78,12 @@ def edit_artist(artist_id: str):
     form = ArtistForm()
     artist = Artist.query.get_or_404(artist_id)
     
-    form.name.default = artist.name
-    form.city.default = artist.city
-    form.state.default = artist.state
-    form.phone.default = artist.phone
-    form.genres.default = loads(artist.genres)
-    form.image_link.default = artist.image_link
-    form.facebook_link.default = artist.facebook_link
-    form.website_link.default = artist.website_link
-    form.seeking_venue.default = artist.seeking_venue
-    form.seeking_description.default = artist.seeking_description
+    for key in form.data:
+        if key in artist.__dict__:
+            if key == 'genres':
+                form[key].default = loads(artist.__dict__[key])
+            else:
+                form[key].default = artist.__dict__[key]
     
     form.process()
 
@@ -99,35 +95,20 @@ def edit_artist_submission(artist_id: str):
     """This function handles the HTTP GET request to edit an artist."""
     artist = Artist.query.get_or_404(artist_id)
     
-    if artist.name != request.form['name'] and request.form['name'] != '':
-        artist.name = request.form['name']
-    
-    if artist.city != request.form['city']:
-        artist.city = request.form['city']
-        
-    if artist.state != request.form['state']:
-        artist.state = request.form['state']
-        
-    if artist.phone != request.form['phone']:
-        artist.phone = request.form['phone']
-    
-    genres = request.form.getlist('genres')
-    if len(genres) > 0:
-        artist.genres = dumps(genres)    
-        
-    if artist.image_link != request.form['image_link']:
-        artist.image_link = request.form['image_link']
-        
-    if artist.facebook_link != request.form['facebook_link']:
-        artist.facebook_link = request.form['facebook_link']
-        
-    if artist.website_link != request.form['website_link']:
-        artist.website_link = request.form['website_link']
-        
+    # Update the seeking_venue attribute first cause this property is not in the form when it's not checked
     artist.seeking_venue = True if "seeking_venue" in request.form else False
-        
-    if artist.seeking_description != request.form['seeking_description']:
-        artist.seeking_description = request.form['seeking_description']
+    
+    for key in request.form:
+        if key in artist.__dict__:
+            if key == 'seeking_venue':
+                return
+            
+            if key == 'genres':
+                artist.__dict__[key] = dumps(request.form.getlist('genres'))
+                return
+            
+            artist.__dict__[key] = request.form[key]
+    
         
     db.session.add(artist)
     db.session.commit()

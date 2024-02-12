@@ -25,7 +25,7 @@ def search_artists():
         'pages/search_artists.html', 
         results={"count": len(artists), "data": artists}, 
         search_term=search_term
-        )
+    )
 
     
 @blp.route('/<int:artist_id>')
@@ -57,7 +57,7 @@ def create_artist_submission():
             image_link=request.form["image_link"],
             facebook_link=request.form["facebook_link"],
             website_link=request.form["website_link"],
-            seeking_venue=True if "seeking_venue" in request.form else False,
+            seeking_venue=hasattr(request.form, "seeking_venue"),
             seeking_description=request.form["seeking_description"],
         )
         
@@ -78,8 +78,8 @@ def edit_artist(artist_id: str):
     artist = Artist.query.get_or_404(artist_id)
     
     for key in form.data:
-        if key in artist.__dict__:
-            form[key].default = artist.__dict__[key] if key != 'genres' else loads(artist.__dict__[key])
+        if hasattr(artist, key):
+            form[key].default = artist.__dict__[key] if key != 'genres' else loads(artist.genres)
     
     form.process()
 
@@ -90,15 +90,14 @@ def edit_artist(artist_id: str):
 def edit_artist_submission(artist_id: str):
     """This function handles the HTTP GET request to edit an artist."""
     artist: Artist = Artist.query.get_or_404(artist_id)
-    
-    # Update the seeking_venue attribute first cause this property is not inclided in the form when it's not checked
-    artist.seeking_venue = True if "seeking_venue" in request.form else False
+    # Update the seeking_venue attribute first cause this property is not included in the form when it's not checked
+    artist.seeking_venue = hasattr(request.form, "seeking_venue")
     
     for key in request.form:
-        if key in artist.__dict__:
+        if hasattr(artist, key):
             match key:
                 case 'genres':
-                    artist.genre = dumps(request.form.getlist('genres'))
+                    setattr(artist, key, dumps(request.form.getlist('genres')))
                 case 'seeking_venue':
                     continue
                 case _:

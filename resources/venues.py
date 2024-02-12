@@ -55,7 +55,7 @@ def create_venue_submission():
             image_link=request.form["image_link"],
             facebook_link=request.form["facebook_link"],
             website_link=request.form["website_link"],
-            seeking_talent=hasattr(request.form, "seeking_talent"),
+            seeking_talent="seeking_talent" in request.form,
             seeking_description=request.form["seeking_description"]
         )
         
@@ -73,6 +73,10 @@ def create_venue_submission():
 def delete_venue(venue_id):
     # TODO: Complete this endpoint for taking a venue_id, and using
     # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+    artist = db.Query.get_or_404(venue_id)
+    
+    db.session.delete(artist)
+    db.session.commit()
 
     # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
     # clicking that button delete it from the db then redirect the user to the homepage
@@ -97,7 +101,7 @@ def edit_venue(venue_id):
 def edit_venue_submission(venue_id):
     venue = Venue.query.get_or_404(venue_id)
     # Update the seeking_talent attribute first cause this property is not included in the form when it's not checked
-    venue.seeking_talent = hasattr(request.form, "seeking_talent")
+    venue.seeking_talent = "seeking_talent" in request.form
     
     for key in request.form:
         if hasattr(venue, key):

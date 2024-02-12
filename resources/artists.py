@@ -57,7 +57,7 @@ def create_artist_submission():
             image_link=request.form["image_link"],
             facebook_link=request.form["facebook_link"],
             website_link=request.form["website_link"],
-            seeking_venue=hasattr(request.form, "seeking_venue"),
+            seeking_venue="seeking_venue" in request.form,
             seeking_description=request.form["seeking_description"],
         )
         
@@ -91,7 +91,7 @@ def edit_artist_submission(artist_id: str):
     """This function handles the HTTP GET request to edit an artist."""
     artist: Artist = Artist.query.get_or_404(artist_id)
     # Update the seeking_venue attribute first cause this property is not included in the form when it's not checked
-    artist.seeking_venue = hasattr(request.form, "seeking_venue")
+    artist.seeking_venue = "seeking_venue" in request.form
     
     for key in request.form:
         if hasattr(artist, key):

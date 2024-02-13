@@ -40,13 +40,14 @@ def show_artist(artist_id: int):
     ).outerjoin(Show).filter(Artist.id == artist_id).all()
     
     if not artist_data:
+        flash('Details for artist with ID ' + str(artist_id) + ' could not be found.')
         return redirect(url_for('artists.artists'))
     
     current_time = datetime.now()
     upcoming_shows = []
     past_shows = []
     
-    for artist, show in artist_data:
+    for _, show in artist_data:
         if hasattr(show, 'start_time'):
             if show.start_time > current_time:
                 upcoming_shows.append({

@@ -18,30 +18,10 @@ To start the created venv:
 . .venv/bin/activate
 ```
 
-## Saving packages
-
-Before any commit, save the packages installed, typing the command bellow:
-
-```shell
-pip freeze > requirements.txt
-```
-
 ## Install packages
 
 ```shell
 pip install -r requirements.txt
-```
-
-## Start migrations
-
-```shell
-flask db init
-```
-
-## Run migrations
-
-```shell
-flask db migrate
 ```
 
 ## Apply migrations

@@ -1,3 +1,4 @@
+from datetime import datetime
 from json import dumps, loads
 from flask import flash, redirect, request, render_template, url_for, Blueprint
 from sqlalchemy.exc import SQLAlchemyError
@@ -5,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from db import db
 from forms import VenueForm
 from models.venue import Venue
+from models.show import Show
 
 blp = Blueprint('venues', __name__)
 
@@ -30,8 +32,56 @@ def search_venues():
 
 @blp.route('/<int:venue_id>')
 def show_venue(venue_id):
-    venue = Venue.query.get_or_404(venue_id)
-    venue.genres = loads(venue.genres)
+    venues_data = db.session.query(
+        Venue,
+        Show
+    ).outerjoin(Show).filter(Venue.id == venue_id).all()
+    
+    if not venues_data:
+        flash('Details for venue with ID ' + str(venue_id) + ' could not be found.')
+        return redirect(url_for('venues.venues'))
+    
+    current_time = datetime.now()
+    upcoming_shows = []
+    past_shows = []
+    
+    for _, show in venues_data:
+        if hasattr(show, 'start_time'):
+            if show.start_time > current_time:
+                upcoming_shows.append({
+                    "artist_id": show.artist_id,
+                    "artist_name": show.artist.name,
+                    "artist_image_link": show.artist.image_link,
+                    "start_time": show.start_time
+                })
+            else:
+                past_shows.append({
+                    "artist_id": show.artist_id,
+                    "artist_name": show.artist.name,
+                    "artist_image_link": show.artist.image_link,
+                    "start_time": show.start_time
+                })
+    
+    venue_info = venues_data[0][0]
+    
+    venue = {
+        "id": venue_info.id,
+        "name": venue_info.name,
+        "genres": loads(venue_info.genres),
+        "address": venue_info.address,
+        "city": venue_info.city,
+        "state": venue_info.state,
+        "phone": venue_info.phone,
+        "website": venue_info.website_link,
+        "facebook_link": venue_info.facebook_link,
+        "seeking_talent": venue_info.seeking_talent,
+        "seeking_description": venue_info.seeking_description,
+        "image_link": venue_info.image_link,
+        "upcoming_shows": upcoming_shows,
+        "past_shows": past_shows,
+        "upcoming_shows_count": len(upcoming_shows),
+        "past_shows_count": len(past_shows)
+    }
     
     return render_template('pages/show_venue.html', venue=venue)
 

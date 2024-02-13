@@ -1,3 +1,4 @@
+from datetime import datetime
 from json import dumps, loads
 from flask import flash, redirect, request, render_template, url_for, Blueprint
 from sqlalchemy.exc import SQLAlchemyError
@@ -5,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from db import db
 from forms import ArtistForm
 from models.artist import Artist
+from models.show import Show
 
 blp = Blueprint('artists', __name__)
 
@@ -31,8 +33,56 @@ def search_artists():
 @blp.route('/<int:artist_id>')
 def show_artist(artist_id: int):
     """This function handles the HTTP GET request to show an artist."""
-    artist = Artist.query.get_or_404(artist_id)
-    artist.genres = loads(artist.genres)
+    
+    artist_data = db.session.query(
+        Artist,
+        Show
+    ).outerjoin(Show).filter(Artist.id == artist_id).all()
+    
+    if not artist_data:
+        return redirect(url_for('artists.artists'))
+    
+    current_time = datetime.now()
+    upcoming_shows = []
+    past_shows = []
+    
+    for artist, show in artist_data:
+        if hasattr(show, 'start_time'):
+            if show.start_time > current_time:
+                upcoming_shows.append({
+                    "venue_id": show.venue_id,
+                    "venue_name": show.venue.name,
+                    "venue_image_link": show.venue.image_link,
+                    "start_time": show.start_time
+                })
+            else:
+                past_shows.append({
+                    "venue_id": show.venue_id,
+                    "venue_name": show.venue.name,
+                    "venue_image_link": show.venue.image_link,
+                    "start_time": show.start_time
+                })
+    
+    
+    artist_info = artist_data[0][0]
+    
+    artist = {
+        "id": artist_info.id,
+        "name": artist_info.name,
+        "city": artist_info.city,
+        "state": artist_info.state,
+        "phone": artist_info.phone,
+        "genres": loads(artist_info.genres),
+        "image_link": artist_info.image_link,
+        "facebook_link": artist_info.facebook_link,
+        "website_link": artist_info.website_link,
+        "seeking_venue": artist_info.seeking_venue,
+        "seeking_description": artist_info.seeking_description,
+        "upcoming_shows": upcoming_shows,
+        "upcoming_shows_count": len(upcoming_shows),
+        "past_shows": past_shows,
+        "past_shows_count": len(past_shows)
+    }
     
     return render_template('pages/show_artist.html', artist=artist)
     

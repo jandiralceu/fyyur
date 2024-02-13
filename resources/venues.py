@@ -25,6 +25,7 @@ def venues():
                 "state": venue.state,
                 "venues": []
             }
+            
         areas_data[area_key]["venues"].append({
             "id": venue.id,
             "name": venue.name,
@@ -59,7 +60,7 @@ def show_venue(venue_id):
     ).outerjoin(Show).filter(Venue.id == venue_id).all()
     
     if not venues_data:
-        flash('Details for venue with ID ' + str(venue_id) + ' could not be found.')
+        flash('Details for venue with ID ' + str(venue_id) + ' could not be found.', 'error')
         return redirect(url_for('venues.venues'))
     
     current_time = datetime.now()
@@ -134,24 +135,26 @@ def create_venue_submission():
         db.session.commit()
         
         flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    except SQLAlchemyError as error:
-        flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.')
+    except SQLAlchemyError as _:
+        flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.', 'error')
 
     return render_template('pages/home.html')
 
 
 @blp.route('/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-    # TODO: Complete this endpoint for taking a venue_id, and using
-    # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-    artist = db.Query.get_or_404(venue_id)
+    try:
+        venue = Venue.query.get_or_404(venue_id)
     
-    db.session.delete(artist)
-    db.session.commit()
+        db.session.delete(venue)
+        db.session.commit()
+        
+        flash('Venue ' + venue.name + ' was successfully deleted!')
+    except SQLAlchemyError as _:
+        flash('Unable to delete the selected venue, please try again later!', 'error')
+    
+    return redirect('/')
 
-    # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-    # clicking that button delete it from the db then redirect the user to the homepage
-    return None
 
 
 @blp.route('/<int:venue_id>/edit', methods=['GET'])

@@ -40,7 +40,7 @@ def show_artist(artist_id: int):
     ).outerjoin(Show).filter(Artist.id == artist_id).all()
     
     if not artist_data:
-        flash('Details for artist with ID ' + str(artist_id) + ' could not be found.')
+        flash('Details for artist with ID ' + str(artist_id) + ' could not be found.', 'error')
         return redirect(url_for('artists.artists'))
     
     current_time = datetime.now()
@@ -116,8 +116,8 @@ def create_artist_submission():
         db.session.commit()
         
         flash('Artist ' + artist.name + ' was successfully listed!')
-    except SQLAlchemyError as error:
-        flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.')
+    except SQLAlchemyError as _:
+        flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.', 'error')
     
     return render_template('pages/home.html')
     

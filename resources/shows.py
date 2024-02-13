@@ -44,7 +44,7 @@ def create_show_submission():
     db.session.commit()
     
     flash('Show was successfully listed!')
-  except SQLAlchemyError as error:
-    flash('An error occurred. Show could not be listed.')
+  except SQLAlchemyError as _:
+    flash('An error occurred. Show could not be listed.', 'error')
 
   return render_template('pages/home.html')

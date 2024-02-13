@@ -13,10 +13,31 @@ blp = Blueprint('venues', __name__)
 
 @blp.route('/')
 def venues():
-    # TODO: replace with real venues data.
-    #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-    data= Venue.query.all()
-    return render_template('pages/venues.html', areas=data);
+    venues_data = Venue.query.order_by(Venue.city, Venue.state).all()
+    
+    areas_data = {}
+    
+    for venue in venues_data:
+        area_key = (venue.city, venue.state)
+        if area_key not in areas_data:
+            areas_data[area_key] = {
+                "city": venue.city,
+                "state": venue.state,
+                "venues": []
+            }
+        areas_data[area_key]["venues"].append({
+            "id": venue.id,
+            "name": venue.name,
+        })
+    
+    
+    areas = [{
+        'city': area['city'], 
+        'state': area['state'], 
+        'venues': area['venues']
+    } for area in areas_data.values()]
+        
+    return render_template('pages/venues.html', areas=areas);
 
 
 @blp.route('/search', methods=['POST'])

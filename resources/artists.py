@@ -11,7 +11,7 @@ blp = Blueprint('artists', __name__)
 
 @blp.route('/', methods=['GET'])
 def artists():
-    data = Artist.query.all()
+    data = Artist.query.order_by(Artist.id.desc()).all()
     return render_template('pages/artists.html', artists=data)
 
 

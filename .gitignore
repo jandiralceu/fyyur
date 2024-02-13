@@ -8,3 +8,7 @@ node_modules
 # editors
 .idea
 .vscode
+
+
+# logs
+*.log

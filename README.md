@@ -29,3 +29,11 @@ pip install -r requirements.txt
 ```shell
 flask db upgrade
 ```
+
+In order to run the application, you need to provide a database URI. On root folder, open `config.py` file. Set the `SQLALCHEMY_DATABASE_URI` variable.
+
+If you hacker docker installed, use the `docker-compose.yml` to provide a database.
+
+```shell
+docker-compose up -d
+```

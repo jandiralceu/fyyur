@@ -145,6 +145,10 @@ def create_venue_submission():
 def delete_venue(venue_id):
     try:
         venue = Venue.query.get_or_404(venue_id)
+        
+        # Delete all shows associated with the venue
+        for show in venue.shows:
+            db.session.delete(show)
     
         db.session.delete(venue)
         db.session.commit()

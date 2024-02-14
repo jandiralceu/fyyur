@@ -76,7 +76,7 @@ def show_artist(artist_id: int):
         "genres": loads(artist_info.genres),
         "image_link": artist_info.image_link,
         "facebook_link": artist_info.facebook_link,
-        "website_link": artist_info.website_link,
+        "website": artist_info.website_link,
         "seeking_venue": artist_info.seeking_venue,
         "seeking_description": artist_info.seeking_description,
         "upcoming_shows": upcoming_shows,

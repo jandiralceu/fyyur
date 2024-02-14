@@ -34,10 +34,36 @@ def create_shows():
 @blp.route('/create', methods=['POST'])
 def create_show_submission():
   try:
+    artist = Artist.query.get_or_404(int(request.form['artist_id']))
+    venue = Venue.query.get_or_404(int(request.form['venue_id']))
+    
+    if artist is None:
+      flash('Unable to find artist with ID: ' + request.form['artist_id'], 'error')
+      return render_template('forms/new_show.html', form=ShowForm())
+    
+    if venue is None:
+      flash('Unable to find venue with ID: ' + request.form['venue_id'], 'error')
+      return render_template('forms/new_show.html', form=ShowForm())
+    
+    if not artist.seeking_venue:
+      flash('Artist is not accepting shows at the moment.', 'error')
+      return render_template('forms/new_show.html', form=ShowForm())
+    
+    if not venue.seeking_talent:
+      flash('Venue is not accepting shows at the moment.', 'error')
+      return render_template('forms/new_show.html', form=ShowForm())
+    
+    current_time = datetime.now()
+    show_time = datetime.strptime(request.form['start_time'], '%Y-%m-%d %H:%M:%S')
+    
+    if show_time < current_time:
+      flash('Show time cannot be in the past.', 'error')
+      return render_template('forms/new_show.html', form=ShowForm())
+    
     show = Show(
-      artist_id=int(request.form['artist_id']),
-      venue_id=int(request.form['venue_id']),
-      start_time=datetime.strptime(request.form['start_time'], '%Y-%m-%d %H:%M:%S')
+      artist_id=artist.id,
+      venue_id=venue.id,
+      start_time=show_time
     )
     
     db.session.add(show)

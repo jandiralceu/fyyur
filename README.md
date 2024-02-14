@@ -37,3 +37,9 @@ If you hacker docker installed, use the `docker-compose.yml` to provide a databa
 ```shell
 docker-compose up -d
 ```
+
+## Start application
+
+```shell
+flask run
+```

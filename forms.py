@@ -85,9 +85,11 @@ def validate_genres(_, field):
         if genre not in [key for key, _ in genres]:
             raise ValidationError('Invalid genre. Please select a valid genre.')
 
+
 def validate_start_time(_, field):
     if field.data < datetime.today():
         raise ValidationError('Start time cannot be in the past')
+
 
 class ShowForm(FlaskForm):
     artist_id = StringField('artist_id', validators=[DataRequired(message='Artist ID is required')])
@@ -95,10 +97,10 @@ class ShowForm(FlaskForm):
     start_time = DateTimeField(
         'start_time',
         validators=[DataRequired(message='Start date is required'), validate_start_time],
-        default= datetime.today()
+        default=datetime.today()
     )
 
- 
+
 class VenueForm(FlaskForm):
     name = StringField('name', validators=[DataRequired(message='Name is required')])
     city = StringField('city', validators=[DataRequired(message='City is required')])
@@ -112,18 +114,19 @@ class VenueForm(FlaskForm):
         ]
     )
     genres = SelectMultipleField(
-        'genres', 
+        'genres',
         validators=[
-            DataRequired(message='Please select at least one genre'), 
+            DataRequired(message='Please select at least one genre'),
             validate_genres
         ],
         choices=genres
     )
-    
-    
+
     image_link = StringField('image_link', validators=[URL(message='Please, provide a valid image URL'), Optional()])
-    facebook_link = StringField('facebook_link', validators=[URL(message='Please, provide a valid facebook URL'), Optional()])
-    website_link = StringField('website_link', validators=[URL(message='Please, provide valid website URL'), Optional()])
+    facebook_link = StringField('facebook_link',
+                                validators=[URL(message='Please, provide a valid facebook URL'), Optional()])
+    website_link = StringField('website_link',
+                               validators=[URL(message='Please, provide valid website URL'), Optional()])
     seeking_talent = BooleanField('seeking_talent')
     seeking_description = StringField('seeking_description')
 
@@ -132,7 +135,7 @@ class ArtistForm(FlaskForm):
     name = StringField('name', validators=[DataRequired(message='Name is required')])
     city = StringField('city', validators=[DataRequired(message='City is required')])
     state = SelectField(
-        'state', 
+        'state',
         validators=[DataRequired(message='State is required')],
         choices=states
     )
@@ -146,14 +149,15 @@ class ArtistForm(FlaskForm):
     genres = SelectMultipleField(
         'genres',
         validators=[
-            DataRequired(message='Please select at least one genre'), 
+            DataRequired(message='Please select at least one genre'),
             validate_genres
         ],
         choices=genres
     )
     image_link = StringField('image_link', validators=[URL(message='Please, provide a valid image URL'), Optional()])
-    facebook_link = StringField('facebook_link', validators=[URL(message='Please, provide a valid facebook URL'), Optional()])
-    website_link = StringField('website_link', validators=[URL(message='Please, provide valid website URL'), Optional()])
+    facebook_link = StringField('facebook_link',
+                                validators=[URL(message='Please, provide a valid facebook URL'), Optional()])
+    website_link = StringField('website_link',
+                               validators=[URL(message='Please, provide valid website URL'), Optional()])
     seeking_venue = BooleanField('seeking_venue')
     seeking_description = StringField('seeking_description')
-

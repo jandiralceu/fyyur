@@ -1,5 +1,6 @@
 from db import db
 
+
 class Artist(db.Model):
     __tablename__ = 'artists'
 
@@ -14,5 +15,5 @@ class Artist(db.Model):
     website_link = db.Column(db.String)
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.Text)
-    
+
     shows = db.relationship('Show', backref='artist', cascade="all, delete-orphan", lazy=True)

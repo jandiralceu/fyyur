@@ -1,6 +1,7 @@
 from datetime import datetime
 from json import dumps, loads
-from flask import flash, redirect, request, render_template, url_for, Blueprint
+import sys
+from flask import (flash, redirect, request, render_template, url_for, Blueprint)
 from sqlalchemy.exc import SQLAlchemyError
 
 from db import db
@@ -84,21 +85,23 @@ def show_venue(venue_id):
                     "start_time": show.start_time
                 })
     
-    venue_info = venues_data[0][0]
+    (data, _) = venues_data[0]
+    genres = loads(data.genres)
+    # print(data.genres)
     
     venue = {
-        "id": venue_info.id,
-        "name": venue_info.name,
-        "genres": loads(venue_info.genres),
-        "address": venue_info.address,
-        "city": venue_info.city,
-        "state": venue_info.state,
-        "phone": venue_info.phone,
-        "website": venue_info.website_link,
-        "facebook_link": venue_info.facebook_link,
-        "seeking_talent": venue_info.seeking_talent,
-        "seeking_description": venue_info.seeking_description,
-        "image_link": venue_info.image_link,
+        "id": data.id,
+        "name": data.name,
+        "genres": genres,  
+        "address": data.address,
+        "city": data.city,
+        "state": data.state,
+        "phone": data.phone,
+        "website": data.website_link,
+        "facebook_link": data.facebook_link,
+        "seeking_talent": data.seeking_talent,
+        "seeking_description": data.seeking_description,
+        "image_link": data.image_link,
         "upcoming_shows": upcoming_shows,
         "past_shows": past_shows,
         "upcoming_shows_count": len(upcoming_shows),
@@ -116,37 +119,45 @@ def create_venue_form():
 
 @blp.route('/create', methods=['POST'])
 def create_venue_submission():
+    form = VenueForm(request.form)
+    
     try:
-        venue = Venue(
-            name=request.form["name"],
-            city=request.form["city"],
-            state=request.form["state"],
-            address=request.form["address"],
-            phone=request.form["phone"],
-            genres=dumps(request.form.getlist('genres')),
-            image_link=request.form["image_link"],
-            facebook_link=request.form["facebook_link"],
-            website_link=request.form["website_link"],
-            seeking_talent="seeking_talent" in request.form,
-            seeking_description=request.form["seeking_description"]
-        )
+        venue = Venue()
+        form.populate_obj(venue)
         
+        if not form.validate():
+            return render_template('forms/new_venue.html', form=form)
+        
+        venue.genres = dumps(request.form.getlist('genres'))
+    
         db.session.add(venue)
         db.session.commit()
         
-        flash('Venue ' + request.form['name'] + ' was successfully listed!')
+        flash('Venue ' + venue.name + ' was successfully listed!')
+        return redirect('/')
     except SQLAlchemyError as _:
-        flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.', 'error')
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error occurred. Venue ' + form.name + ' could not be created.', 'error')
+        return render_template('forms/new_venue.html', form=VenueForm())
+    except ValueError as e:
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error ocurred. Please check the form data and try again.', 'error')
+        return render_template('forms/new_venue.html', form=VenueForm())
+    finally:
+        db.session.close()
 
-    return render_template('pages/home.html')
 
 
 @blp.route('/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
+    '''Delete a venue by its ID. This will also delete all shows associated with the venue.'''
     try:
         venue = Venue.query.get_or_404(venue_id)
         
-        # Delete all shows associated with the venue
         for show in venue.shows:
             db.session.delete(show)
     
@@ -163,12 +174,16 @@ def delete_venue(venue_id):
 
 @blp.route('/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
-    form = VenueForm()
+    '''Edit venue by its ID. It will pre-populate the form with the venue data.'''
     venue = Venue.query.get_or_404(venue_id)
+    form = VenueForm()
     
     for key in form.data:
         if hasattr(venue, key):
-            form[key].default = venue.__dict__[key] if key != 'genres' else loads(venue.genres)
+            if key == 'genres':
+                form[key].default = loads(venue.genres)
+            else:
+                form[key].default = venue.__dict__[key]
     
     form.process()
     
@@ -177,20 +192,34 @@ def edit_venue(venue_id):
 
 @blp.route('/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
+    '''Edit venue by its ID. It will update the venue data with the form data.'''
     venue = Venue.query.get_or_404(venue_id)
-    # Update the seeking_talent attribute first cause this property is not included in the form when it's not checked
-    venue.seeking_talent = "seeking_talent" in request.form
+    form = VenueForm(request.form)
     
-    for key in request.form:
-        if hasattr(venue, key):
-            match key:
-                case "genres":
-                    setattr(venue, key, dumps(request.form.getlist('genres')))
-                case "seeking_talent":
-                    continue
-                case _:
-                    setattr(venue, key, request.form[key])
+    form.populate_obj(venue)
     
-    db.session.commit()
+    try:
+        if not form.validate():
+            return render_template('forms/edit_venue.html', form=form, venue=venue)
+        
+        venue.genres = dumps(venue.genres)
+        db.session.commit()
+        
+        return redirect(url_for('venues.show_venue', venue_id=venue_id))
+    except SQLAlchemyError as _:
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error occurred. Venue ' + form.name + ' could not be updated.', 'error')
+        return render_template('forms/edit_venue.html', form=form, venue=venue)
+    except ValueError as e:
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error ocurred. Please check the form data and try again.', 'error')
+        return render_template('forms/edit_venue.html', form=form, venue=venue)
+    finally:
+        db.session.close()
+        
             
-    return redirect(url_for('venues.show_venue', venue_id=venue_id))
+    

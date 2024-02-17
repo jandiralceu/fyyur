@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL, Regexp
+from wtforms import (StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField, ValidationError)
+from wtforms.validators import (DataRequired, URL, Regexp, Optional)
 
 genres = [
     ('Alternative', 'Alternative'),
@@ -80,6 +80,12 @@ states = [
 ]
 
 
+def validate_genres(form, field):
+    for genre in field.data:
+        if genre not in [key for key, _ in genres]:
+            raise ValidationError('Invalid genre')
+
+
 class ShowForm(FlaskForm):
     artist_id = StringField('artist_id', validators=[DataRequired()])
     venue_id = StringField('venue_id', validators=[DataRequired()])
@@ -89,31 +95,32 @@ class ShowForm(FlaskForm):
         default= datetime.today()
     )
 
-
+ 
 class VenueForm(FlaskForm):
-    name = StringField('name', validators=[DataRequired()])
-    city = StringField('city', validators=[DataRequired()])
-    state = SelectField(
-        'state', 
-        validators=[DataRequired()],
-        choices=states
-    )
-    address = StringField('address', validators=[DataRequired()])
+    name = StringField('name', validators=[DataRequired(message='Name is required')])
+    city = StringField('city', validators=[DataRequired(message='City is required')])
+    address = StringField('address', validators=[DataRequired(message='Address is required')])
+    state = SelectField('state', choices=states)
     phone = StringField(
         'phone',
-        validators=[Regexp('^\d{3}-\d{3}-\d{4}$', message='Invalid phone number')]
+        validators=[
+            Optional(),
+            Regexp('^\d{3}-\d{3}-\d{4}$', message='Invalid phone number. Please use the format 123-456-7890')
+        ]
     )
     genres = SelectMultipleField(
         'genres', 
         validators=[
             DataRequired(message='Please select at least one genre'), 
-            AnyOf([key for key, _ in genres], message='Invalid genre')
+            validate_genres
         ],
         choices=genres
     )
-    image_link = StringField('image_link', validators=[URL()])
-    facebook_link = StringField('facebook_link', validators=[URL()])
-    website_link = StringField('website_link', validators=[URL()])
+    
+    
+    image_link = StringField('image_link', validators=[URL(message='Please, provide a valid image URL'), Optional()])
+    facebook_link = StringField('facebook_link', validators=[URL(message='Please, provide a valid facebook URL'), Optional()])
+    website_link = StringField('website_link', validators=[URL(message='Please, provide valid website URL'), Optional()])
     seeking_talent = BooleanField('seeking_talent')
     seeking_description = StringField('seeking_description')
 
@@ -135,7 +142,7 @@ class ArtistForm(FlaskForm):
         'genres',
         validators=[
             DataRequired(message='Please select at least one genre'), 
-            AnyOf([key for key, _ in genres], message='Invalid genre')
+            validate_genres
         ],
         choices=genres
     )

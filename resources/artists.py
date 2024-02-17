@@ -66,6 +66,9 @@ def show_artist(artist_id: int):
                     "start_time": show.start_time
                 })
 
+    upcoming_shows = sorted(upcoming_shows, key=lambda x: x['start_time'])
+    past_shows = sorted(past_shows, key=lambda x: x['start_time'], reverse=True)
+    
     artist_info = artist_data[0][0]
 
     artist = {

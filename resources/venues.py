@@ -10,7 +10,6 @@ from forms import VenueForm
 from models.venue import Venue
 from models.show import Show
 
-
 blp = Blueprint('venues', __name__)
 
 
@@ -45,7 +44,6 @@ def venues():
 
 @blp.route('/search', methods=['POST'])
 def search_venues():
-    
     search_term = request.form.get('search_term', '')
     result = Venue.query.filter(Venue.name.ilike(f'%{search_term}%')).all()
 

@@ -2,6 +2,7 @@ import logging
 
 from flask import (Blueprint, flash, render_template, request)
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import desc
 from wtforms import ValidationError
 
 from db import db
@@ -23,7 +24,8 @@ def shows():
         Venue.name.label('venue_name'),
         Show.artist_id,
         Artist.name.label('artist_name'),
-        Artist.image_link.label('artist_image_link')).join(Artist).join(Venue).all()
+        Artist.image_link.label('artist_image_link')
+    ).join(Artist).join(Venue).order_by(desc(Show.start_time)).all()
 
     return render_template('pages/shows.html', shows=result)
 

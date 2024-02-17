@@ -1,6 +1,7 @@
 from datetime import datetime
 from json import dumps, loads
-from flask import flash, redirect, request, render_template, url_for, Blueprint
+import sys
+from flask import (flash, redirect, request, render_template, url_for, Blueprint)
 from sqlalchemy.exc import SQLAlchemyError
 
 from db import db
@@ -91,35 +92,42 @@ def show_artist(artist_id: int):
 @blp.route('/create', methods=['GET'])
 def create_artist_form():
     """This function handles the HTTP GET request to show the create artist form."""
-    form = ArtistForm()
-    return render_template('forms/new_artist.html', form=form)
+    return render_template('forms/new_artist.html', form=ArtistForm())
 
 
 @blp.route('/create', methods=['POST'])
 def create_artist_submission():
     """This function handles the HTTP POST request to create a new artist."""
+    form = ArtistForm(request.form)
+    artist = Artist()
+    
     try:
-        artist = Artist(
-            name=request.form["name"],
-            city=request.form["city"],
-            state=request.form["state"],
-            phone=request.form["phone"],
-            genres=dumps(request.form.getlist('genres')),
-            image_link=request.form["image_link"],
-            facebook_link=request.form["facebook_link"],
-            website_link=request.form["website_link"],
-            seeking_venue="seeking_venue" in request.form,
-            seeking_description=request.form["seeking_description"],
-        )
+        form.populate_obj(artist)
+        
+        if not form.validate():
+            return render_template('forms/new_artist.html', form=form)
+        
+        artist.genres = dumps(artist.genres)
         
         db.session.add(artist)
         db.session.commit()
         
-        flash('Artist ' + artist.name + ' was successfully listed!')
+        flash('Artist ' + artist.name + ' created successfully!')
+        return render_template('pages/home.html')
     except SQLAlchemyError as _:
-        flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.', 'error')
-    
-    return render_template('pages/home.html')
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error occurred. Artist ' + artist.name + ' could not be created.', 'error')
+        return render_template('forms/new_artist.html', form=form)
+    except ValueError as e:
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error ocurred. Please check the form data and try again.', 'error')
+        return render_template('forms/new_artist.html', form=form)
+    finally:
+        db.session.close()
     
 
 @blp.route('/<string:artist_id>/edit', methods=['GET'])
@@ -141,19 +149,29 @@ def edit_artist(artist_id: str):
 def edit_artist_submission(artist_id: str):
     """This function handles the HTTP GET request to edit an artist."""
     artist: Artist = Artist.query.get_or_404(artist_id)
-    # Update the seeking_venue attribute first cause this property is not included in the form when it's not checked
-    artist.seeking_venue = "seeking_venue" in request.form
+    form = ArtistForm(request.form)
     
-    for key in request.form:
-        if hasattr(artist, key):
-            match key:
-                case 'genres':
-                    setattr(artist, key, dumps(request.form.getlist('genres')))
-                case 'seeking_venue':
-                    continue
-                case _:
-                    setattr(artist, key, request.form[key])
+    form.populate_obj(artist)
     
-    db.session.commit()
-    
-    return redirect(url_for('artists.show_artist', artist_id=artist_id))
+    try:
+        if not form.validate():
+            return render_template('forms/edit_artist.html', form=form, artist=artist)
+        
+        artist.genres = dumps(artist.genres)
+        db.session.commit()
+        
+        return redirect(url_for('artists.show_artist', artist_id=artist_id))
+    except SQLAlchemyError as _:
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error occurred. Artist ' + form.name + ' could not be updated.', 'error')
+        return render_template('forms/edit_artist.html', form=form, artist=artist)
+    except ValueError as e:
+        print(sys.exc_info())
+        db.session.rollback()
+        
+        flash('An error ocurred. Please check the form data and try again.', 'error')
+        return render_template('forms/edit_artist.html', form=form, artist=artist)
+    finally:
+        db.session.close()

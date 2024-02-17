@@ -87,7 +87,6 @@ def show_venue(venue_id):
     
     (data, _) = venues_data[0]
     genres = loads(data.genres)
-    # print(data.genres)
     
     venue = {
         "id": data.id,
@@ -140,13 +139,13 @@ def create_venue_submission():
         db.session.rollback()
         
         flash('An error occurred. Venue ' + form.name + ' could not be created.', 'error')
-        return render_template('forms/new_venue.html', form=VenueForm())
+        return render_template('forms/new_venue.html', form=form)
     except ValueError as e:
         print(sys.exc_info())
         db.session.rollback()
         
         flash('An error ocurred. Please check the form data and try again.', 'error')
-        return render_template('forms/new_venue.html', form=VenueForm())
+        return render_template('forms/new_venue.html', form=form)
     finally:
         db.session.close()
 

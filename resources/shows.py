@@ -1,7 +1,7 @@
 import sys
 from flask import (Blueprint, flash, render_template, request)
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime
+from wtforms import ValidationError
 
 from db import db
 
@@ -15,52 +15,55 @@ blp = Blueprint('shows', __name__)
 
 @blp.route('/shows')
 def shows():
-    shows = db.session.query(
-      Show.start_time,
-      Show.venue_id,
-      Venue.name.label('venue_name'),
-      Show.artist_id,
-      Artist.name.label('artist_name'),
-      Artist.image_link.label('artist_image_link')).join(Artist).join(Venue).all()
-    
-    return render_template('pages/shows.html', shows=shows)
+  '''This function handles the HTTP GET request to show all shows.'''
+  shows = db.session.query(
+    Show.start_time,
+    Show.venue_id,
+    Venue.name.label('venue_name'),
+    Show.artist_id,
+    Artist.name.label('artist_name'),
+    Artist.image_link.label('artist_image_link')).join(Artist).join(Venue).all()
+  
+  return render_template('pages/shows.html', shows=shows)
 
 
 @blp.route('/create')
 def create_shows():
-    form = ShowForm()
-    return render_template('forms/new_show.html', form=form)
+  '''This function handles the HTTP GET request to create a new show form.'''
+  form = ShowForm()
+  return render_template('forms/new_show.html', form=form)
 
 
 @blp.route('/create', methods=['POST'])
 def create_show_submission():
+  form = ShowForm(request.form)
+  
+  
   try:
-    form = ShowForm(request.form)
     show = Show()
     form.populate_obj(show)
     
-    artist = Artist.query.get_or_404(show.artist_id)
-    venue = Venue.query.get_or_404(show.venue_id)
+    if not form.validate():
+      return render_template('forms/new_show.html', form=form)
+  
+    artist = Artist.query.filter_by(id=show.artist_id).first()
+    venue = Venue.query.filter_by(id=show.venue_id).first()
     
     if artist is None:
-      flash('Unable to find artist with ID: ' + show.artist_id, 'error')
-      return render_template('forms/new_show.html', form=ShowForm())
+      raise ValidationError(f'Unable to find artist with ID: {show.artist_id}')
     
     if venue is None:
-      flash('Unable to find venue with ID: ' + show.venue_id, 'error')
-      return render_template('forms/new_show.html', form=ShowForm())
+      raise ValidationError(f'Unable to find venue with ID: {show.venue_id}')
     
-    if not artist.seeking_venue:
-      flash('Artist is not accepting shows at the moment.', 'error')
-      return render_template('forms/new_show.html', form=ShowForm())
+    if artist and not artist.seeking_venue:
+      raise ValidationError('The selected artist is not accepting shows at the moment.')
     
-    if not venue.seeking_talent:
-      flash('Venue is not accepting shows at the moment.', 'error')
-      return render_template('forms/new_show.html', form=ShowForm())
+    if venue and not venue.seeking_talent:
+      raise ValidationError('The selected venue is not accepting shows at the moment.')
     
-    if show.start_time < datetime.now():
-      flash('Show time cannot be in the past.', 'error')
-      return render_template('forms/new_show.html', form=ShowForm())
+    
+    if not form.validate():
+      return render_template('forms/new_show.html', form=form)
     
     db.session.add(show)
     db.session.commit()
@@ -71,13 +74,13 @@ def create_show_submission():
     print(sys.exc_info())
     db.session.rollback()
     
-    flash('An error occurred. Show could not be listed.', 'error')
-    return render_template('forms/new_show.html', form=ShowForm())
-  except ValueError as e:
+    flash('An error occurred. Show could not be created.', 'error')
+    return render_template('forms/new_show.html', form=form)
+  except ValueError as message:
     print(sys.exc_info())
     db.session.rollback()
     
-    flash('An error ocurred. Please check the form data and try again.', 'error')
-    return render_template('forms/new_show.html', form=ShowForm())
+    flash(message, 'error')
+    return render_template('forms/new_show.html', form=form)
   finally:
     db.session.close()

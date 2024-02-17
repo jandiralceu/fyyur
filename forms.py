@@ -80,18 +80,21 @@ states = [
 ]
 
 
-def validate_genres(form, field):
+def validate_genres(_, field):
     for genre in field.data:
         if genre not in [key for key, _ in genres]:
-            raise ValidationError('Invalid genre')
+            raise ValidationError('Invalid genre. Please select a valid genre.')
 
+def validate_start_time(_, field):
+    if field.data < datetime.today():
+        raise ValidationError('Start time cannot be in the past')
 
 class ShowForm(FlaskForm):
-    artist_id = StringField('artist_id', validators=[DataRequired()])
-    venue_id = StringField('venue_id', validators=[DataRequired()])
+    artist_id = StringField('artist_id', validators=[DataRequired(message='Artist ID is required')])
+    venue_id = StringField('venue_id', validators=[DataRequired(message='Venue ID is required')])
     start_time = DateTimeField(
         'start_time',
-        validators=[DataRequired()],
+        validators=[DataRequired(message='Start date is required'), validate_start_time],
         default= datetime.today()
     )
 
@@ -100,7 +103,7 @@ class VenueForm(FlaskForm):
     name = StringField('name', validators=[DataRequired(message='Name is required')])
     city = StringField('city', validators=[DataRequired(message='City is required')])
     address = StringField('address', validators=[DataRequired(message='Address is required')])
-    state = SelectField('state', choices=states)
+    state = SelectField('state', choices=states, validators=[DataRequired(message='State is required')])
     phone = StringField(
         'phone',
         validators=[
@@ -126,18 +129,20 @@ class VenueForm(FlaskForm):
 
 
 class ArtistForm(FlaskForm):
-    name = StringField('name', validators=[DataRequired()])
-    city = StringField('city', validators=[DataRequired()])
+    name = StringField('name', validators=[DataRequired(message='Name is required')])
+    city = StringField('city', validators=[DataRequired(message='City is required')])
     state = SelectField(
         'state', 
-        validators=[DataRequired()],
+        validators=[DataRequired(message='State is required')],
         choices=states
     )
     phone = StringField(
-        'phone', 
-        validators=[Regexp('^\d{3}-\d{3}-\d{4}$', message='Invalid phone number')]
+        'phone',
+        validators=[
+            Optional(),
+            Regexp('^\d{3}-\d{3}-\d{4}$', message='Invalid phone number. Please use the format 123-456-7890')
+        ]
     )
-    image_link = StringField('image_link', validators=[URL()])
     genres = SelectMultipleField(
         'genres',
         validators=[
@@ -146,8 +151,9 @@ class ArtistForm(FlaskForm):
         ],
         choices=genres
     )
-    facebook_link = StringField('facebook_link', validators=[URL()])
-    website_link = StringField('website_link', validators=[URL()])
+    image_link = StringField('image_link', validators=[URL(message='Please, provide a valid image URL'), Optional()])
+    facebook_link = StringField('facebook_link', validators=[URL(message='Please, provide a valid facebook URL'), Optional()])
+    website_link = StringField('website_link', validators=[URL(message='Please, provide valid website URL'), Optional()])
     seeking_venue = BooleanField('seeking_venue')
     seeking_description = StringField('seeking_description')
 

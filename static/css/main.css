@@ -224,3 +224,7 @@ li.venue-list__item button {
 li.venue-list__item a {
   margin-bottom: 0 !important;
 }
+
+.text-danger {
+  font-size: 12px;
+}

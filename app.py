@@ -1,7 +1,6 @@
 from flask import Flask, render_template
 from flask_moment import Moment
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect
 import logging
 
 from db import db
@@ -13,9 +12,6 @@ def create_app():
     moment = Moment(app)
 
     app.config.from_object('config')
-
-    csrf = CSRFProtect()
-    csrf.init_app(app)
 
     db.init_app(app=app)
     migrate = Migrate(app=app, db=db)

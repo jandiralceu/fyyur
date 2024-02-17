@@ -1,4 +1,5 @@
-from flask import Blueprint, flash, render_template, request
+import sys
+from flask import (Blueprint, flash, render_template, request)
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 
@@ -34,15 +35,19 @@ def create_shows():
 @blp.route('/create', methods=['POST'])
 def create_show_submission():
   try:
-    artist = Artist.query.get_or_404(int(request.form['artist_id']))
-    venue = Venue.query.get_or_404(int(request.form['venue_id']))
+    form = ShowForm(request.form)
+    show = Show()
+    form.populate_obj(show)
+    
+    artist = Artist.query.get_or_404(show.artist_id)
+    venue = Venue.query.get_or_404(show.venue_id)
     
     if artist is None:
-      flash('Unable to find artist with ID: ' + request.form['artist_id'], 'error')
+      flash('Unable to find artist with ID: ' + show.artist_id, 'error')
       return render_template('forms/new_show.html', form=ShowForm())
     
     if venue is None:
-      flash('Unable to find venue with ID: ' + request.form['venue_id'], 'error')
+      flash('Unable to find venue with ID: ' + show.venue_id, 'error')
       return render_template('forms/new_show.html', form=ShowForm())
     
     if not artist.seeking_venue:
@@ -53,24 +58,26 @@ def create_show_submission():
       flash('Venue is not accepting shows at the moment.', 'error')
       return render_template('forms/new_show.html', form=ShowForm())
     
-    current_time = datetime.now()
-    show_time = datetime.strptime(request.form['start_time'], '%Y-%m-%d %H:%M:%S')
-    
-    if show_time < current_time:
+    if show.start_time < datetime.now():
       flash('Show time cannot be in the past.', 'error')
       return render_template('forms/new_show.html', form=ShowForm())
-    
-    show = Show(
-      artist_id=artist.id,
-      venue_id=venue.id,
-      start_time=show_time
-    )
     
     db.session.add(show)
     db.session.commit()
     
     flash('Show was successfully listed!')
+    return render_template('pages/home.html')
   except SQLAlchemyError as _:
+    print(sys.exc_info())
+    db.session.rollback()
+    
     flash('An error occurred. Show could not be listed.', 'error')
-
-  return render_template('pages/home.html')
+    return render_template('forms/new_show.html', form=ShowForm())
+  except ValueError as e:
+    print(sys.exc_info())
+    db.session.rollback()
+    
+    flash('An error ocurred. Please check the form data and try again.', 'error')
+    return render_template('forms/new_show.html', form=ShowForm())
+  finally:
+    db.session.close()

@@ -1,6 +1,7 @@
+import logging
+
 from datetime import datetime
 from json import dumps, loads
-import sys
 from flask import (flash, redirect, request, render_template, url_for, Blueprint)
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -114,14 +115,14 @@ def create_artist_submission():
         
         flash('Artist ' + artist.name + ' created successfully!')
         return render_template('pages/home.html')
-    except SQLAlchemyError as _:
-        print(sys.exc_info())
+    except SQLAlchemyError as e:
+        logging.error(e)
         db.session.rollback()
         
         flash('An error occurred. Artist ' + artist.name + ' could not be created.', 'error')
         return render_template('forms/new_artist.html', form=form)
     except ValueError as e:
-        print(sys.exc_info())
+        logging.error(e)
         db.session.rollback()
         
         flash('An error ocurred. Please check the form data and try again.', 'error')
@@ -161,14 +162,14 @@ def edit_artist_submission(artist_id: str):
         db.session.commit()
         
         return redirect(url_for('artists.show_artist', artist_id=artist_id))
-    except SQLAlchemyError as _:
-        print(sys.exc_info())
+    except SQLAlchemyError as e:
+        logging.error(e)
         db.session.rollback()
         
         flash('An error occurred. Artist ' + form.name + ' could not be updated.', 'error')
         return render_template('forms/edit_artist.html', form=form, artist=artist)
     except ValueError as e:
-        print(sys.exc_info())
+        logging.error(e)
         db.session.rollback()
         
         flash('An error ocurred. Please check the form data and try again.', 'error')

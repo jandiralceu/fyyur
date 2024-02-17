@@ -1,6 +1,7 @@
+import logging
+
 from datetime import datetime
 from json import dumps, loads
-import sys
 from flask import (flash, redirect, request, render_template, url_for, Blueprint)
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -134,14 +135,14 @@ def create_venue_submission():
         
         flash('Venue ' + venue.name + ' was successfully listed!')
         return redirect('/')
-    except SQLAlchemyError as _:
-        print(sys.exc_info())
+    except SQLAlchemyError as e:
+        logging.error(e)
         db.session.rollback()
         
         flash('An error occurred. Venue ' + form.name + ' could not be created.', 'error')
         return render_template('forms/new_venue.html', form=form)
     except ValueError as e:
-        print(sys.exc_info())
+        logging.error(e)
         db.session.rollback()
         
         flash('An error ocurred. Please check the form data and try again.', 'error')
@@ -205,14 +206,14 @@ def edit_venue_submission(venue_id):
         db.session.commit()
         
         return redirect(url_for('venues.show_venue', venue_id=venue_id))
-    except SQLAlchemyError as _:
-        print(sys.exc_info())
+    except SQLAlchemyError as e:
+        logging.error(e)
         db.session.rollback()
         
         flash('An error occurred. Venue ' + form.name + ' could not be updated.', 'error')
         return render_template('forms/edit_venue.html', form=form, venue=venue)
     except ValueError as e:
-        print(sys.exc_info())
+        logging.error(e)
         db.session.rollback()
         
         flash('An error ocurred. Please check the form data and try again.', 'error')

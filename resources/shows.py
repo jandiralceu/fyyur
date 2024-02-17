@@ -1,4 +1,5 @@
-import sys
+import logging
+
 from flask import (Blueprint, flash, render_template, request)
 from sqlalchemy.exc import SQLAlchemyError
 from wtforms import ValidationError
@@ -70,17 +71,17 @@ def create_show_submission():
     
     flash('Show was successfully listed!')
     return render_template('pages/home.html')
-  except SQLAlchemyError as _:
-    print(sys.exc_info())
+  except SQLAlchemyError as e:
+    logging.error(e)
     db.session.rollback()
     
     flash('An error occurred. Show could not be created.', 'error')
     return render_template('forms/new_show.html', form=form)
-  except ValueError as message:
-    print(sys.exc_info())
+  except ValueError as e:
+    logging.error(e)
     db.session.rollback()
     
-    flash(message, 'error')
+    flash(e, category='error')
     return render_template('forms/new_show.html', form=form)
   finally:
     db.session.close()
